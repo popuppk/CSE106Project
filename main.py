@@ -151,7 +151,7 @@ def register():
 #Navigation stuff
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('login.html')
 
 @app.route('/index')
 def index():
@@ -169,25 +169,42 @@ def shared_inventory():
 def restock():
     return render_template('index.html')
 
-@app.route('/add_row', methods=['POST'])
-def add_row():
-    data = request.json
-    # Process the received data (e.g., database update, further validation, etc.)
-    print(data)  
-    return 'Data received'
-
-
 @app.route('/registration', methods=['Get'])
 def registration():
     return render_template('registration.html')
 
 
 
-@app.route('/viewclass', methods=['POST'])
-def viewclass():
-    return render_template('viewClass.html', className=request.form['additional_parameter'])
+#Data Getting:
+@app.route('/getUserInventory', methods=['GET'])
+def get_user_inventory():
+    user_inventory = Inventory.query.filter_by(userID=current_user.id).all()
 
+    if not user_inventory:
+        return jsonify({'message': 'No inventory found for this user'}), 404
 
+    inventory_list = []
+    for item in user_inventory:
+        inventory_list.append({
+            'id': item.id,
+            'itemName': item.itemName,
+            'quantity': item.quantity,
+            'description': item.description
+        })
+
+    return jsonify({'user_inventory': inventory_list}), 200
+
+#Data Setting:
+
+@app.route('/add_row', methods=['POST'])
+def add_row():
+    print('data received')
+    data = request.json
+    newitem = Inventory(userID=current_user.id, itemName=data[2], quantity=int(data[3]), description=data[4])
+    db.session.add(newitem)
+    db.session.commit()
+    print('data received')
+    return 'Data received'
 
 
 if __name__ == '__main__':
@@ -195,162 +212,3 @@ if __name__ == '__main__':
 
 
 
-#Old Code for Reference:
-"""
-
-def get_classes_for_student():
-    student = Students.query.filter_by(username=current_user.username).first()
-
-    if student:
-        classes_enrolled = student.classes
-
-        class_details = []
-        for enrollment in classes_enrolled:
-            current_students = Enrollment.query.filter_by(class_id=enrollment.class_id).count()
-            max_size = enrollment.clas.maxSize
-
-            class_details.append({
-                'class_name': enrollment.clas.name,
-                'class_time': enrollment.clas.time,
-                'teacher_name': enrollment.clas.teacher.username,
-                'grade': enrollment.grade,
-                'students_count': f'{current_students}/{max_size}'
-            })
-
-        return class_details
-    else:
-        return None
-
-def get_all_classes_for_student():
-    all_classes = Clas.query.all()
-    student = Students.query.filter_by(username=current_user.username).first()
-
-    student_classes = {enrollment.class_id: enrollment.grade for enrollment in student.classes}
-    class_details = []
-
-    for class_temp in all_classes:
-        is_enrolled = class_temp.id in student_classes
-
-        current_students = Enrollment.query.filter_by(class_id=class_temp.id).count()
-        max_size = class_temp.maxSize
-
-        class_details.append({
-                'class_name': class_temp.name,
-                'class_time': class_temp.time,
-                'teacher_name': class_temp.teacher.username,
-                'is_enrolled': is_enrolled,
-                'students_count': f'{current_students}/{max_size}'
-        })
-        
-    return class_details
-
-
-    
-@app.route('/getClassesForStudent', methods=['GET'])
-def classes_for_student():
-    classes = get_classes_for_student()
-    return jsonify({'classes': classes})
-
-@app.route('/getAllClassesForStudent', methods=['GET'])
-def all_Classes_For_Student():
-    classes = get_all_classes_for_student()
-    return jsonify({'classes': classes})
-
-
-def get_classes_for_teacher():
-    teacher = Teacher.query.filter_by(username=current_user.username).first()
-    
-    if teacher:
-        classes_Teaching = teacher.classes
-        
-        class_details = []
-        for taught_class in classes_Teaching:
-            current_students = Enrollment.query.filter_by(class_id=taught_class.id).count()
-            max_size = taught_class.maxSize
-
-            class_details.append({
-                'class_name': taught_class.name,
-                'class_time': taught_class.time,
-                'teacher_name': current_user.username,
-                'students_count': f'{current_students}/{max_size}'
-            })
-
-        return class_details
-    else:
-        return None
-
-@app.route('/getClassesForTeacher', methods=['GET'])
-def classes_for_teacher():
-    classes = get_classes_for_teacher()
-
-    return jsonify({'classes': classes})
-
-def get_students_and_grades_for_class(class_name):
-    class_obj = Clas.query.filter_by(name=class_name).first()
-
-    enrollments = class_obj.enrollments
-
-    student_details = []
-    for enrollment in enrollments:
-        student_details.append({
-            'student_name': enrollment.students.username,
-            'grade': enrollment.grade
-        })
-
-    return student_details
-
-@app.route('/get_students_and_grades_for_class', methods=['GET'])
-def students_and_grades_for_class():
-    class_name = request.args.get('class_name')
-
-    students_and_grades = get_students_and_grades_for_class(class_name)
-    return jsonify({'students_and_grades': students_and_grades})
-    
-@app.route('/dropclass', methods=['POST'])
-def dropclass():
-    class_name = request.form.get('class_name')
-    student_name = request.form.get('student_name')
-
-    student = Students.query.filter_by(username=student_name).first()
-    clas = Clas.query.filter_by(name=class_name).first()
-
-    enrollment = Enrollment.query.filter_by(student_id=student.id, class_id=clas.id).first()
-
-    db.session.delete(enrollment)
-    db.session.commit()
-
-    return render_template('student.html', username=current_user.username)
-
-@app.route('/addclass', methods=['POST'])
-def addclass():
-    class_name = request.form.get('class_name')
-    student_name = request.form.get('student_name')
-
-    student = Students.query.filter_by(username=student_name).first()
-    clas = Clas.query.filter_by(name=class_name).first()
-
-    new_enrollment = Enrollment(student_id=student.id, class_id=clas.id, grade=100)
-    db.session.add(new_enrollment)
-    db.session.commit()
-
-    return render_template('student.html', username=current_user.username)
-
-@app.route('/changegrade', methods=['POST'])
-def changegrade():
-    student_name = request.form.get('student_name')
-    class_name = request.form.get('class_name')
-    new_grade = int(request.form.get('new_grade'))
-
-    print(student_name)
-    print(class_name)
-    student = Students.query.filter_by(username=student_name).first()
-    clas = Clas.query.filter_by(name=class_name).first()
-
-    enrollment = Enrollment.query.filter_by(student_id=student.id, class_id=clas.id).first()
-
-    enrollment.grade = new_grade
-    db.session.commit()
-
-    return render_template('viewClass.html', className=class_name)
-
-"""
