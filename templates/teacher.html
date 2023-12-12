@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <title>The Paul and Jack Registry</title>
+
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="description" content="" />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+</head>
+
+<body onload="getClasses()">
+  <header>
+      <h1>The Paul and Jack Registry</h1>
+      <h3>Welcome {{ username }}</h3>
+      <form method="POST" action="{{ url_for('logout') }}">
+        <button type="submit">Logout</button>
+      </form>
+  </header>
+
+  <main class="content">
+    <section class="courseTable">
+      <div class="table-container active">
+        <table id="taughtClassesTable">
+          <tr>
+            <th>Course Name</th>
+            <th>Teacher</th>
+            <th>Time</th>
+            <th>Students Enrolled</th>
+          </tr>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+      <p>&copy; Paul & Jack, we deserve full points</p>
+  </footer>
+
+  <script>
+    //Get Data
+    let getClasses = () => {
+        fetch('/getClassesForTeacher', {
+            method: 'GET'
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            console.log(data)
+            for(let key in data.classes) {
+                const classname = data.classes[key]['class_name']
+                const teacher = data.classes[key]['teacher_name']
+                const time = data.classes[key]['class_time']
+                const size = data.classes[key]['students_count']
+                const markup = `<tr><td><form method="POST" action="{{ url_for('viewclass') }}"><input type="hidden" name="additional_parameter" value="${classname}"><button type="submit">${classname}</button></form></td><td>${teacher}</td><td>${time}</td><td>${size}</td></tr>`
+
+                document.getElementById('taughtClassesTable').insertAdjacentHTML('beforeend', markup)
+            }
+        })
+    }
+  </script>
+
+</body>
+
+</html>

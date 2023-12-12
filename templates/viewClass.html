@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <title>The Paul and Jack Registry</title>
+
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="description" content="" />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+</head>
+
+<body onload="getClasses()">
+  <header>
+      <h1>The Paul and Jack Registry</h1>
+      <h3>Welcome {{ username }}</h3>
+      <form method="POST" action="{{ url_for('logout') }}">
+        <button type="submit">Logout</button>
+      </form>
+      <form method="POST" action="{{ url_for('teach') }}">
+        <button type="submit">Go Back</button>
+      </form>
+  </header>
+  <h2>{{ className }}</h2>
+  <main class="content">
+    <section class="courseTable">
+      <div class="table-container active">
+        <table id="classTable">
+          <tr>
+            <th>Student Name</th>
+            <th>Grade</th>
+            <th>Update Grade</th>
+          </tr>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+      <p>&copy; Paul & Jack, we deserve full points</p>
+  </footer>
+
+  <script>
+    //Get Data
+    const NameofClass = "{{ className }}";
+    let getClasses = () => {
+        fetch('/get_students_and_grades_for_class?class_name={{ className }}', {
+            method: 'GET'
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data)
+            for(let key in data.students_and_grades) {
+                const studentname = data.students_and_grades[key]['student_name']
+                const grade = data.students_and_grades[key]['grade']
+                const updategrade = `<form method="POST" action="{{ url_for('changegrade') }}"><input type="hidden" name="class_name" value="{{ className }}"><input type="hidden" name="student_name" value="${studentname}"><input type="text" name="new_grade" placeholder="New Grade"><button type="submit">CHANGE</button></form>`
+                const markup = `<tr><td>${studentname}</td><td>${grade}</td><td>${updategrade}</td></tr>`
+
+                document.getElementById('classTable').insertAdjacentHTML('beforeend', markup)
+            }
+        })
+    }
+  </script>
+
+</body>
+
+</html>
