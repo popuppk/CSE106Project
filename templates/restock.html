@@ -49,20 +49,30 @@
 			  <th>UserID</th>
 			  <th>ItemName</th>
 			  <th>Quantity</th>
-			  <th>Restock Amount</th>
 			  <th>Description</th>
-			  <th>Submit Edits</th>
 			</tr>
 		  </thead>
 		  <tbody id="invtable">
+			<tr>
+			  <td>1</td>
+			  <td>{{ username }}</td>
+			  <td>Item A</td>
+			  <td>5</td>
+			  <td>Description of Item A</td>
+			</tr>
+			<tr>
+			  <td>2</td>
+			  <td>{{ username }}</td>
+			  <td>Item B</td>
+			  <td>10</td>
+			  <td>Description of Item B</td>
+			</tr>
 			<tr id="editableRow">
 				<td><button class="addrow" onclick="submitData()">Submit</button></td>
 				<td>{{ username }}</td>
 				<td contenteditable="true"></td>
 				<td contenteditable="true"></td>
 				<td contenteditable="true"></td>
-				<td contenteditable="true"></td>
-				<td>N/A</td>
 			  </tr>
 		  </tbody>
 		</table>
@@ -97,30 +107,13 @@
 					const id = data.user_inventory[key]['id']
 					const itemname = data.user_inventory[key]['itemName']
 					const quantity = data.user_inventory[key]['quantity']
-					const restock = data.user_inventory[key]['restock']
 					const description = data.user_inventory[key]['description']
-					const markup = `<tr><td>${id}</td><td>{{ username }}</td><td contenteditable="true">${itemname}</td><td contenteditable="true">${quantity}</td><td contenteditable="true">${restock}</td><td contenteditable="true">${description}</td><td><button onclick="editRow(this)">Push Changes</button></td></tr>`
+					const markup = `<tr><td>${id}</td><td>{{ username }}</td><td>${itemname}</td><td>${quantity}</td><td>${description}</td></tr>`
 
 					document.getElementById('invtable').lastElementChild.insertAdjacentHTML('beforebegin', markup)
 				}
 			})
 		}
-
-	//Edit table row:
-	function editRow(button) {
-		var row = button.parentNode.parentNode;
-		var cells = row.getElementsByTagName("td");
-
-		var rowData = Array.from(cells).map(cell => cell.innerText);
-		
-		fetch('/edit_row', {
-			method: 'PUT',
-			body: JSON.stringify(rowData),
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		})
-	}
 	 
 	 //Add row to table:
 	 function submitData() {
@@ -136,7 +129,7 @@
 		}
 		})
 
-		document.getElementById('editableRow').innerHTML = `<td><button class="addrow" onclick="submitData()">Submit</button></td><td>{{ username }}</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td>N/A</td>`
+		document.getElementById('editableRow').innerHTML = `<td><button class="addrow" onclick="submitData()">Submit</button></td><td>{{ username }}</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>`
 		
 		getInventory();
 	}

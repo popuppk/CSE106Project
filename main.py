@@ -42,6 +42,7 @@ class Inventory(db.Model):
     userID = db.Column(db.Integer,db.ForeignKey('users.id'), nullable=False)
     itemName = db.Column(db.String(100), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
+    restockmin = db.Column(db.Integer)
     description = db.Column(db.Text)
     def get_id(self):
         return str(self.id)
@@ -189,6 +190,7 @@ def get_user_inventory():
             'id': item.id,
             'itemName': item.itemName,
             'quantity': item.quantity,
+            'restock': item.restockmin,
             'description': item.description
         })
 
@@ -200,11 +202,25 @@ def get_user_inventory():
 def add_row():
     print('data received')
     data = request.json
-    newitem = Inventory(userID=current_user.id, itemName=data[2], quantity=int(data[3]), description=data[4])
+    newitem = Inventory(userID=current_user.id, itemName=data[2], quantity=int(data[3]), restockmin=int(data[4]), description=data[5])
     db.session.add(newitem)
     db.session.commit()
     print('data received')
     return 'Data received'
+
+@app.route('/edit_row', methods=['PUT'])
+def edit_row():
+    data = request.json
+    entry = Inventory.query.get(int(data[0]))
+
+    entry.itemName = data[2]
+    entry.quantity = int(data[3])
+    entry.restockmin = int(data[4])
+    entry.description = data[5]
+
+    db.session.commit()
+
+    return "Edit Complete"
 
 
 if __name__ == '__main__':
