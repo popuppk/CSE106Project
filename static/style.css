@@ -43,6 +43,14 @@ body {
   margin-right: 0;
 }
 
+footer {
+  background-color: #1F3A4C;
+  color: #fff;
+  text-align: center;
+  padding: 1em;
+}
+
+
 table {
       border-collapse: collapse;
       width: 90%;
@@ -63,4 +71,19 @@ th {
 	margin: 40px;
  	font-weight: bold;
 	font-family: inherit;
+}
+
+.login-box {
+  max-width: 400px;
+  margin: auto;
+  text-align: center;
+}
+
+.login-box h2 {
+  color: #333;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
 }

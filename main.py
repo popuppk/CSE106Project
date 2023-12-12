@@ -20,7 +20,7 @@ admin = Admin(app, name='Admin Interface', template_mode='bootstrap3')
 
 
 class Users(db.Model):
-    userID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     passwordhash = db.Column(db.String(100), nullable=False)
@@ -28,15 +28,18 @@ class Users(db.Model):
     def set_password(self, password):
         self.passwordhash = generate_password_hash(password)
     
-    def set_password(self, password):
-        return check_password_hash(password)
-    
+    def check_password(self, password):
+        return check_password_hash(self.passwordhash, password)
+    def is_active(self):
+        return (current_user.username == self.username)
     def get_id(self):
         return str(self.id)
+    def is_authenticated(self):
+        return True
 
 class Inventory(db.Model):
-    itemID = db.Column(db.Integer, primary_key=True)
-    userID = db.Column(db.Integer,db.ForeignKey('users.userID'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    userID = db.Column(db.Integer,db.ForeignKey('users.id'), nullable=False)
     itemName = db.Column(db.String(100), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text)
@@ -44,14 +47,14 @@ class Inventory(db.Model):
         return str(self.id)
 
 class SharedInventory(db.Model):
-    shareID = db.Column(db.Integer, primary_key=True)
-    sharedUserID = db.Column(db.Integer, db.ForeignKey('users.userID'), nullable=False)
-    itemID = db.Column(db.Integer, db.ForeignKey('inventory.itemID'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    sharedUserID = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    itemID = db.Column(db.Integer, db.ForeignKey('inventory.id'), nullable=False)
     permissionLevel = db.Column(db.String(20), nullable=False)
 
 class RestockInventory(db.Model):
-    restockID = db.Column(db.Integer, primary_key=True)
-    itemID = db.Column(db.Integer, db.ForeignKey('inventory.itemID'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    itemID = db.Column(db.Integer, db.ForeignKey('inventory.id'), nullable=False)
     quantityNeeded = db.Column(db.Integer, nullable=False)
     dateAdded = db.Column(db.Date, nullable=False)
     Status = db.Column(db.String(20), nullable=False)
@@ -59,28 +62,28 @@ class RestockInventory(db.Model):
 
 
 class UsersAdminView(ModelView):
-    column_list = ['userID', 'name', 'username', 'email']  
+    column_list = ['id', 'name', 'username', 'email']  
     can_create = True
     can_edit = True
     can_delete = True
     column_searchable_list = ['username', 'email'] 
 
 class InventoryAdminView(ModelView):
-    column_list = ['itemID', 'userID', 'itemName', 'quantity'] 
+    column_list = ['id', 'userID', 'itemName', 'quantity'] 
     can_create = True
     can_edit = True
     can_delete = True
     column_searchable_list = ['itemName']  
 
 class SharedInventoryAdminView(ModelView):
-    column_list = ['shareID', 'sharedUserID', 'itemID', 'permissionLevel']  
+    column_list = ['id', 'sharedUserID', 'itemID', 'permissionLevel']  
     can_create = True
     can_edit = True
     can_delete = True
     column_searchable_list = ['permissionLevel'] 
 
 class RestockInventoryAdminView(ModelView):
-    column_list = ['restockID', 'itemID', 'quantityNeeded', 'dateAdded', 'Status']  
+    column_list = ['id', 'itemID', 'quantityNeeded', 'dateAdded', 'Status']  
     can_create = True
     can_edit = True
     can_delete = True
@@ -119,7 +122,7 @@ def login():
             
     return render_template('login.html')
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['GET'])
 @login_required
 def logout():
     logout_user()
@@ -174,7 +177,7 @@ def add_row():
     return 'Data received'
 
 
-@app.route('/registration', methods=['POST'])
+@app.route('/registration', methods=['Get'])
 def registration():
     return render_template('registration.html')
 
