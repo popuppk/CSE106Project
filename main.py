@@ -9,7 +9,7 @@ from flask_login import UserMixin, LoginManager, login_user, logout_user, login_
 
 app = Flask(__name__, template_folder='templates')
 login_manager = LoginManager(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///grades.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///storage.db'
 app.config['SECRET_KEY'] = 'adminkey'
 
 login_manager.login_view = 'login'
@@ -18,68 +18,72 @@ db = SQLAlchemy(app)
 admin = Admin(app, name='Admin Interface', template_mode='bootstrap3')
 
 
-class Students(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    password = db.Column(db.String(20), nullable=False)
-    classes = db.relationship('Enrollment', backref='students', lazy=True)
+class Users(db.Model):
+    userID = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20))
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.string(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
     def get_id(self):
         return str(self.id)
 
-class Teacher(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    password = db.Column(db.String(20), nullable=False)
-    classes = db.relationship('Clas', backref='teacher', lazy=True)
+class Inventory(db.Model):
+    itemID = db.Column(db.Integer, primary_key=True)
+    userID = db.Column(db.Integer,db.ForeignKey('users.userID'), nullable=False)
+    itemName = db.Column(db.String(100), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text)
     def get_id(self):
         return str(self.id)
 
-class Clas(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    time = db.Column(db.String(20), nullable=False)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teacher.id'), nullable=False)
-    maxSize = db.Column(db.Integer, nullable=False)
-    enrollments = db.relationship('Enrollment', backref='clas', lazy=True)
+class SharedInventory(db.Model):
+    shareID = db.Column(db.Integer, primary_key=True)
+    sharedUserID = db.Column(db.Integer, db.ForeignKey('users.userID'), nullable=False)
+    itemID = db.Column(db.Integer, db.ForeignKey('inventory.itemID'), nullable=False)
+    permissionLevel = db.Column(db.String(20), nullable=False)
 
-class Enrollment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    class_id = db.Column(db.Integer, db.ForeignKey('clas.id'), nullable=False)
-    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
-    grade = db.Column(db.Integer, nullable=False)
+class RestockInventory(db.Model):
+    restockID = db.Column(db.Integer, primary_key=True)
+    itemID = db.Column(db.Integer, db.ForeignKey('clas.id'), nullable=False)
+    quantityNeeded = db.Column(db.Integer, nullable=False)
+    dateAdded = db.Column(db.Date, nullable=False)
+    Status = db.Column(db.String(20), nullable=False)
 
 
-class StudentView(ModelView):
-    column_list = ['id', 'username', 'password', 'classes']
+
+class UsersAdminView(ModelView):
+    column_list = ['userID', 'name', 'username', 'email']  
     can_create = True
     can_edit = True
     can_delete = True
-    column_searchable_list = ['id', 'username']
+    column_searchable_list = ['username', 'email'] 
 
-class TeacherView(ModelView):
-    column_list = ['id', 'username', 'password', 'classes']
+class InventoryAdminView(ModelView):
+    column_list = ['itemID', 'userID', 'itemName', 'quantity'] 
     can_create = True
     can_edit = True
     can_delete = True
-    column_searchable_list = ['username']
+    column_searchable_list = ['itemName']  
 
-class ClassView(ModelView):
-    column_list = ['id', 'name', 'time', 'teacher_id', 'maxSize', 'enrollments']
+class SharedInventoryAdminView(ModelView):
+    column_list = ['shareID', 'sharedUserID', 'itemID', 'permissionLevel']  
     can_create = True
     can_edit = True
     can_delete = True
-    column_searchable_list = ['name', 'time']
+    column_searchable_list = ['permissionLevel'] 
 
-class EnrollmentView(ModelView):
-    column_list = ['id', 'class_id', 'student_id', 'grade']
+class RestockInventoryAdminView(ModelView):
+    column_list = ['restockID', 'itemID', 'quantityNeeded', 'dateAdded', 'Status']  
     can_create = True
     can_edit = True
     can_delete = True
+    column_searchable_list = ['Status'] 
 
-admin.add_view(StudentView(Students, db.session))
-admin.add_view(TeacherView(Teacher, db.session))
-admin.add_view(ClassView(Clas, db.session))
-admin.add_view(EnrollmentView(Enrollment, db.session))
+
+admin.add_view(UsersAdminView(Users, db.session))
+admin.add_view(InventoryAdminView(Inventory, db.session))
+admin.add_view(SharedInventoryAdminView(SharedInventory, db.session))
+admin.add_view(RestockInventoryAdminView(RestockInventory, db.session))
 
 
 with app.app_context():
@@ -88,14 +92,11 @@ with app.app_context():
 
 @app.route('/')
 def home():
-    return render_template('login.html')
+    return render_template('index.html')
 
 @app.route('/index')
 def index():
-    return render_template('login.html')
-@app.route('/teacher', methods=['POST'] )
-def teach():
-    return render_template('teacher.html', username=current_user.username)
+    return render_template('index.html')
 
 @app.route('/registration', methods=['POST'])
 def registration():
@@ -109,17 +110,14 @@ def viewclass():
 @login_manager.user_loader
 def load_user(user_id):
     user_type = session.get('role')
-    if user_type == 'student':
-        return Students.query.get(int(user_id))
-    elif user_type == 'teacher':
-        return Teacher.query.get(int(user_id))
+    return Users.query.get(int(user_id))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = Students.query.filter_by(username=username).first() or Teacher.query.filter_by(username=username).first()
+        user = Users.query.filter_by(username=username).first()
 
         if(username == "admin"):
             return redirect("/admin")
@@ -166,6 +164,14 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+
+if __name__ == '__main__':
+    app.run(debug=True, ost="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+
+
+#Old Code for Reference:
+"""
 
 def get_classes_for_student():
     student = Students.query.filter_by(username=current_user.username).first()
@@ -322,7 +328,4 @@ def changegrade():
 
     return render_template('viewClass.html', className=class_name)
 
-
-if __name__ == '__main__':
-    app.run(debug=True, ost="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
-
+"""

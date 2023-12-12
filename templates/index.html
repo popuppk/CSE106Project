@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <title>The Paul and Jack Registry</title>
+
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="description" content="" />
+
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body onload="getClasses(); getAllClasses()">
+	<div class="navbar">
+		<h3>PJL Inventory Management</h3>
+		<nav>
+			<ul>
+				<li>My Inventory</li>
+				<li>Shared Inventories</li>
+				<li>Restock Alerts</li>
+				<li>Log Out</li>
+			</ul>
+		</nav>
+	</div>
+
+  <main class="content">
+	<hr>
+	<div class="filters">
+		<label for="itemName">Search by Item Name:</label>
+		<input type="text" id="itemName" placeholder="Enter item name">
+
+		<label for="minQuantity">Minimum Quantity:</label>
+		<input type="number" id="minQuantity" placeholder="Min quantity">
+
+		<button onclick="applyFilters()">Apply Filters</button>
+		<button onclick="resetFilters()">Reset Filters</button>
+	</div>
+    <section class="Inventory Table">
+   	  <table>
+		  <thead>
+			<tr>
+			  <th>ItemID</th>
+			  <th>UserID</th>
+			  <th>ItemName</th>
+			  <th>Quantity</th>
+			  <th>Description</th>
+			</tr>
+		  </thead>
+		  <tbody>
+			<tr>
+			  <td>1</td>
+			  <td>User1</td>
+			  <td>Item A</td>
+			  <td>5</td>
+			  <td>Description of Item A</td>
+			</tr>
+			<tr>
+			  <td>2</td>
+			  <td>User2</td>
+			  <td>Item B</td>
+			  <td>10</td>
+			  <td>Description of Item B</td>
+			</tr>
+		  </tbody>
+		</table>
+    </section>
+  </main>
+
+  <footer>
+      <p>&copy; Paul, Luis & Jack, we deserve full points</p>
+  </footer>
+
+  
+
+</body>
+
+	<script>
+	 
+	</script>
+</html>
