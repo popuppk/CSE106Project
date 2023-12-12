@@ -21,10 +21,10 @@
 		<h3>PJL Inventory Management</h3>
 		<nav>
 			<ul>
-				<li>My Inventory</li>
-				<li>Shared Inventories</li>
-				<li>Restock Alerts</li>
-				<li>Log Out</li>
+				<li><a href="{{ url_for('inventory') }}">My Inventory</a></li>
+				<li><a href="{{ url_for('shared_inventory') }}">Shared Inventories</a></li>
+				<li><a href="{{ url_for('restock') }}">Restock Alerts</a></li>
+				<li><a href="{{ url_for('logout') }}">Log Out</a></li>
 			</ul>
 		</nav>
 	</div>
@@ -55,18 +55,25 @@
 		  <tbody>
 			<tr>
 			  <td>1</td>
-			  <td>User1</td>
+			  <td>{{ username }}</td>
 			  <td>Item A</td>
 			  <td>5</td>
 			  <td>Description of Item A</td>
 			</tr>
 			<tr>
 			  <td>2</td>
-			  <td>User2</td>
+			  <td>{{ username }}</td>
 			  <td>Item B</td>
 			  <td>10</td>
 			  <td>Description of Item B</td>
 			</tr>
+			<tr id="editableRow">
+				<td><button class="addrow" onclick="submitData()">Submit</button></td>
+				<td>{{ username }}</td>
+				<td contenteditable="true"></td>
+				<td contenteditable="true"></td>
+				<td contenteditable="true"></td>
+			  </tr>
 		  </tbody>
 		</table>
     </section>
@@ -82,5 +89,20 @@
 
 	<script>
 	 
+	 //Add row to table:
+	 function submitData() {
+		console.log("data")
+		const newRow = document.getElementById('editableRow');
+		const cells = newRow.getElementsByTagName('td');
+		const data = Array.from(cells).map(cell => cell.innerText);
+		
+		fetch('/add_row', {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: {
+			'Content-Type': 'application/json'
+		}
+		})
+	}
 	</script>
 </html>

@@ -1,9 +1,10 @@
-from flask import Flask, jsonify, render_template, redirect, url_for, request, session
+from flask import flash, Flask, jsonify, render_template, redirect, url_for, request, session
 from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_login import UserMixin, LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 
@@ -20,10 +21,16 @@ admin = Admin(app, name='Admin Interface', template_mode='bootstrap3')
 
 class Users(db.Model):
     userID = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(20))
     username = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
+    passwordhash = db.Column(db.String(100), nullable=False)
+
+    def set_password(self, password):
+        self.passwordhash = generate_password_hash(password)
+    
+    def set_password(self, password):
+        return check_password_hash(password)
+    
     def get_id(self):
         return str(self.id)
 
@@ -90,26 +97,9 @@ with app.app_context():
     db.create_all();
 
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/index')
-def index():
-    return render_template('index.html')
-
-@app.route('/registration', methods=['POST'])
-def registration():
-    return render_template('registration.html')
-
-@app.route('/viewclass', methods=['POST'])
-def viewclass():
-    return render_template('viewClass.html', className=request.form['additional_parameter'])
-
-
+#login stuff:
 @login_manager.user_loader
 def load_user(user_id):
-    user_type = session.get('role')
     return Users.query.get(int(user_id))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -123,46 +113,78 @@ def login():
             return redirect("/admin")
         
 
-        if user and (user.password == password):
-
-            session.clear()
-            logout_user()
+        if user and (user.check_password(password)):
             login_user(user)
-
-            session['role'] = 'student' if isinstance(user, Students) else 'teacher'
-
-            if session['role'] == 'student':
-                return render_template('student.html', username=current_user.username)
-            if session['role'] == 'teacher':
-                return render_template('teacher.html', username=current_user.username)
-
+            return render_template('index.html', username=current_user.username)
+            
     return render_template('login.html')
 
 @app.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    session.pop('role', None)
-    return redirect(url_for('index'))
-
-
+    return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        role = request.form['role']
+        email = request.form['email']
+        existing_user = Users.query.filter_by(username=username).first()
 
-        if role == 'student':
-            new_user = Students(username=username, password=password)
+        if existing_user:
+            flash('Username already exists')
         else:
-            new_user = Teacher(username=username, password=password)
+            new_user = Users(username=username,email=email)
+            new_user.set_password(password)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('You have successfully registered')
+            return redirect(url_for('login')) 
+    return render_template('registration.html')
 
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('login'))
-    return render_template('register.html')
+
+#Navigation stuff
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/index')
+def index():
+    return render_template('index.html')
+
+@app.route('/inventory')
+def inventory():
+    return render_template('index.html')
+
+@app.route('/sharedinv')
+def shared_inventory():
+    return render_template('index.html')
+
+@app.route('/restock')
+def restock():
+    return render_template('index.html')
+
+@app.route('/add_row', methods=['POST'])
+def add_row():
+    data = request.json
+    # Process the received data (e.g., database update, further validation, etc.)
+    print(data)  
+    return 'Data received'
+
+
+@app.route('/registration', methods=['POST'])
+def registration():
+    return render_template('registration.html')
+
+
+
+@app.route('/viewclass', methods=['POST'])
+def viewclass():
+    return render_template('viewClass.html', className=request.form['additional_parameter'])
+
+
 
 
 if __name__ == '__main__':

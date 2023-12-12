@@ -30,6 +30,15 @@ body {
   cursor: pointer;
 }
 
+.navbar li a {
+  color: white; /* Change color to your desired color */
+  text-decoration: none;
+}
+
+.navbar li a:hover {
+  color: lightgray;
+}
+
 .navbar li:last-child {
   margin-right: 0;
 }
