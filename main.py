@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template, redirect, url_for, request, session
 from flask_sqlalchemy import SQLAlchemy
+import os
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_login import UserMixin, LoginManager, login_user, logout_user, login_required, current_user
@@ -323,5 +324,5 @@ def changegrade():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True, ost="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
 
