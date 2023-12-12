@@ -22,7 +22,7 @@ class Users(db.Model):
     userID = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20))
     username = db.Column(db.String(100), unique=True, nullable=False)
-    email = db.Column(db.string(100), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     def get_id(self):
         return str(self.id)
@@ -44,7 +44,7 @@ class SharedInventory(db.Model):
 
 class RestockInventory(db.Model):
     restockID = db.Column(db.Integer, primary_key=True)
-    itemID = db.Column(db.Integer, db.ForeignKey('clas.id'), nullable=False)
+    itemID = db.Column(db.Integer, db.ForeignKey('inventory.itemID'), nullable=False)
     quantityNeeded = db.Column(db.Integer, nullable=False)
     dateAdded = db.Column(db.Date, nullable=False)
     Status = db.Column(db.String(20), nullable=False)
@@ -166,7 +166,7 @@ def register():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, ost="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
 
 
 
