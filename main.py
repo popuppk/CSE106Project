@@ -42,14 +42,15 @@ class Inventory(db.Model):
     userID = db.Column(db.Integer,db.ForeignKey('users.id'), nullable=False)
     itemName = db.Column(db.String(100), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
+    restockmin = db.Column(db.Integer)
     description = db.Column(db.Text)
     def get_id(self):
         return str(self.id)
 
 class SharedInventory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sharedUserID = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    itemID = db.Column(db.Integer, db.ForeignKey('inventory.id'), nullable=False)
+    ownersID = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    sharedID = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     permissionLevel = db.Column(db.String(20), nullable=False)
 
 class RestockInventory(db.Model):
@@ -151,31 +152,51 @@ def register():
 #Navigation stuff
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('login.html')
 
 @app.route('/index')
 def index():
     return render_template('index.html')
 
-@app.route('/inventory')
+@app.route('/inventory', methods=['GET', 'POST'])
 def inventory():
+    if request.method == 'POST':
+        # Handle filtering and search logic
+        item_name_filter = request.form.get('itemName')
+        min_quantity_filter = request.form.get('minQuantity')
+
+        # Query the inventory based on filters
+        inventory_items = Inventory.query.filter(
+            Inventory.itemName.ilike(f"%{item_name_filter}%"),
+            Inventory.quantity >= min_quantity_filter if min_quantity_filter else True
+        ).all()
+
+        return render_template('index.html', inventory_items=inventory_items)
+
+    # If it's a GET request, just render the inventory template
     return render_template('index.html')
 
 @app.route('/sharedinv')
 def shared_inventory():
-    return render_template('index.html')
+    currentuserid = current_user.id;
+    SharedInventories = SharedInventory.query.filter_by(sharedID=currentuserid).all()
+
+    shared_inventories_data = {
+    }
+    for share in SharedInventories:
+        usersname = Users.query.filter_by(id=share.ownersID).first().username;
+        invent = Inventory.query.filter_by(userID=share.ownersID).all()
+        itemsarry = []
+        for item in invent:
+            itemsarry.append(item)
+        shared_inventories_data[usersname] = itemsarry
+        
+    
+    return render_template('shared_inventory.html', shared_inventories=shared_inventories_data)
 
 @app.route('/restock')
 def restock():
     return render_template('index.html')
-
-@app.route('/add_row', methods=['POST'])
-def add_row():
-    data = request.json
-    # Process the received data (e.g., database update, further validation, etc.)
-    print(data)  
-    return 'Data received'
-
 
 @app.route('/registration', methods=['Get'])
 def registration():
@@ -183,11 +204,63 @@ def registration():
 
 
 
-@app.route('/viewclass', methods=['POST'])
-def viewclass():
-    return render_template('viewClass.html', className=request.form['additional_parameter'])
+#Data Getting:
+@app.route('/getUserInventory', methods=['GET'])
+def get_user_inventory():
+    user_inventory = Inventory.query.filter_by(userID=current_user.id).all()
 
+    if not user_inventory:
+        return jsonify({'message': 'No inventory found for this user'}), 404
 
+    inventory_list = []
+    for item in user_inventory:
+        inventory_list.append({
+            'id': item.id,
+            'itemName': item.itemName,
+            'quantity': item.quantity,
+            'restock': item.restockmin,
+            'description': item.description
+        })
+
+    return jsonify({'user_inventory': inventory_list}), 200
+
+#Data Setting:
+
+@app.route('/share_inv', methods=['POST'])
+def share_inv():
+    data = request.json
+    print(data);
+    usertoshareid = Users.query.filter_by(username=data).first()
+    
+    newshare = SharedInventory(ownersID=current_user.id,sharedID=usertoshareid.id,permissionLevel="Edit")
+    db.session.add(newshare)
+    db.session.commit()
+    return "share complete"
+           
+
+@app.route('/add_row', methods=['POST'])
+def add_row():
+    print('data received')
+    data = request.json
+    newitem = Inventory(userID=current_user.id, itemName=data[2], quantity=int(data[3]), restockmin=int(data[4]), description=data[5])
+    db.session.add(newitem)
+    db.session.commit()
+    print('data received')
+    return 'Data received'
+
+@app.route('/edit_row', methods=['PUT'])
+def edit_row():
+    data = request.json
+    entry = Inventory.query.get(int(data[0]))
+
+    entry.itemName = data[2]
+    entry.quantity = int(data[3])
+    entry.restockmin = int(data[4])
+    entry.description = data[5]
+
+    db.session.commit()
+
+    return "Edit Complete"
 
 
 if __name__ == '__main__':
@@ -195,162 +268,3 @@ if __name__ == '__main__':
 
 
 
-#Old Code for Reference:
-"""
-
-def get_classes_for_student():
-    student = Students.query.filter_by(username=current_user.username).first()
-
-    if student:
-        classes_enrolled = student.classes
-
-        class_details = []
-        for enrollment in classes_enrolled:
-            current_students = Enrollment.query.filter_by(class_id=enrollment.class_id).count()
-            max_size = enrollment.clas.maxSize
-
-            class_details.append({
-                'class_name': enrollment.clas.name,
-                'class_time': enrollment.clas.time,
-                'teacher_name': enrollment.clas.teacher.username,
-                'grade': enrollment.grade,
-                'students_count': f'{current_students}/{max_size}'
-            })
-
-        return class_details
-    else:
-        return None
-
-def get_all_classes_for_student():
-    all_classes = Clas.query.all()
-    student = Students.query.filter_by(username=current_user.username).first()
-
-    student_classes = {enrollment.class_id: enrollment.grade for enrollment in student.classes}
-    class_details = []
-
-    for class_temp in all_classes:
-        is_enrolled = class_temp.id in student_classes
-
-        current_students = Enrollment.query.filter_by(class_id=class_temp.id).count()
-        max_size = class_temp.maxSize
-
-        class_details.append({
-                'class_name': class_temp.name,
-                'class_time': class_temp.time,
-                'teacher_name': class_temp.teacher.username,
-                'is_enrolled': is_enrolled,
-                'students_count': f'{current_students}/{max_size}'
-        })
-        
-    return class_details
-
-
-    
-@app.route('/getClassesForStudent', methods=['GET'])
-def classes_for_student():
-    classes = get_classes_for_student()
-    return jsonify({'classes': classes})
-
-@app.route('/getAllClassesForStudent', methods=['GET'])
-def all_Classes_For_Student():
-    classes = get_all_classes_for_student()
-    return jsonify({'classes': classes})
-
-
-def get_classes_for_teacher():
-    teacher = Teacher.query.filter_by(username=current_user.username).first()
-    
-    if teacher:
-        classes_Teaching = teacher.classes
-        
-        class_details = []
-        for taught_class in classes_Teaching:
-            current_students = Enrollment.query.filter_by(class_id=taught_class.id).count()
-            max_size = taught_class.maxSize
-
-            class_details.append({
-                'class_name': taught_class.name,
-                'class_time': taught_class.time,
-                'teacher_name': current_user.username,
-                'students_count': f'{current_students}/{max_size}'
-            })
-
-        return class_details
-    else:
-        return None
-
-@app.route('/getClassesForTeacher', methods=['GET'])
-def classes_for_teacher():
-    classes = get_classes_for_teacher()
-
-    return jsonify({'classes': classes})
-
-def get_students_and_grades_for_class(class_name):
-    class_obj = Clas.query.filter_by(name=class_name).first()
-
-    enrollments = class_obj.enrollments
-
-    student_details = []
-    for enrollment in enrollments:
-        student_details.append({
-            'student_name': enrollment.students.username,
-            'grade': enrollment.grade
-        })
-
-    return student_details
-
-@app.route('/get_students_and_grades_for_class', methods=['GET'])
-def students_and_grades_for_class():
-    class_name = request.args.get('class_name')
-
-    students_and_grades = get_students_and_grades_for_class(class_name)
-    return jsonify({'students_and_grades': students_and_grades})
-    
-@app.route('/dropclass', methods=['POST'])
-def dropclass():
-    class_name = request.form.get('class_name')
-    student_name = request.form.get('student_name')
-
-    student = Students.query.filter_by(username=student_name).first()
-    clas = Clas.query.filter_by(name=class_name).first()
-
-    enrollment = Enrollment.query.filter_by(student_id=student.id, class_id=clas.id).first()
-
-    db.session.delete(enrollment)
-    db.session.commit()
-
-    return render_template('student.html', username=current_user.username)
-
-@app.route('/addclass', methods=['POST'])
-def addclass():
-    class_name = request.form.get('class_name')
-    student_name = request.form.get('student_name')
-
-    student = Students.query.filter_by(username=student_name).first()
-    clas = Clas.query.filter_by(name=class_name).first()
-
-    new_enrollment = Enrollment(student_id=student.id, class_id=clas.id, grade=100)
-    db.session.add(new_enrollment)
-    db.session.commit()
-
-    return render_template('student.html', username=current_user.username)
-
-@app.route('/changegrade', methods=['POST'])
-def changegrade():
-    student_name = request.form.get('student_name')
-    class_name = request.form.get('class_name')
-    new_grade = int(request.form.get('new_grade'))
-
-    print(student_name)
-    print(class_name)
-    student = Students.query.filter_by(username=student_name).first()
-    clas = Clas.query.filter_by(name=class_name).first()
-
-    enrollment = Enrollment.query.filter_by(student_id=student.id, class_id=clas.id).first()
-
-    enrollment.grade = new_grade
-    db.session.commit()
-
-    return render_template('viewClass.html', className=class_name)
-
-"""
