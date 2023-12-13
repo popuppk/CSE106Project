@@ -58,7 +58,11 @@
 			  </tr>
 		  </tbody>
 		</table>
-		</table>
+		<div>
+			<label for="shareInv">Share Inventory with:</label>
+			<input type="text" id="shareInv" placeholder="Username">
+			<button onclick="share()">Apply Filters</button>
+		</div>
     </section>
   </main>
 
@@ -67,6 +71,17 @@
   </footer>
 
 	<script>
+		function share() {
+			const shareUser = document.getElementById('shareInv').value;
+			
+			fetch('./share_inv', {
+				method: 'POST',
+				body: JSON.stringify(shareUser),
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			})
+		}
 		// Add row to table:
 		function submitData() {
 			const newRow = document.getElementById('editableRow');

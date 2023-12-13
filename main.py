@@ -171,19 +171,27 @@ def inventory():
             Inventory.quantity >= min_quantity_filter if min_quantity_filter else True
         ).all()
 
-        return render_template('inventory.html', inventory_items=inventory_items)
+        return render_template('index.html', inventory_items=inventory_items)
 
     # If it's a GET request, just render the inventory template
-    return render_template('inventory.html')
+    return render_template('index.html')
 
 @app.route('/sharedinv')
 def shared_inventory():
-   
-    #placeholder for data
+    currentuserid = current_user.id;
+    SharedInventories = SharedInventory.query.filter_by(sharedID=currentuserid).all()
+
     shared_inventories_data = {
-        'user1': ['item1', 'item2'],
-        'user2': ['item3', 'item4'],
     }
+    for share in SharedInventories:
+        usersname = Users.query.filter_by(id=share.ownersID).first().username;
+        invent = Inventory.query.filter_by(userID=share.ownersID).all()
+        itemsarry = []
+        for item in invent:
+            itemsarry.append(item)
+        shared_inventories_data[usersname] = itemsarry
+        
+    
     return render_template('shared_inventory.html', shared_inventories=shared_inventories_data)
 
 @app.route('/restock')
@@ -217,6 +225,18 @@ def get_user_inventory():
     return jsonify({'user_inventory': inventory_list}), 200
 
 #Data Setting:
+
+@app.route('/share_inv', methods=['POST'])
+def share_inv():
+    data = request.json
+    print(data);
+    usertoshareid = Users.query.filter_by(username=data).first()
+    
+    newshare = SharedInventory(ownersID=current_user.id,sharedID=usertoshareid.id,permissionLevel="Edit")
+    db.session.add(newshare)
+    db.session.commit()
+    return "share complete"
+           
 
 @app.route('/add_row', methods=['POST'])
 def add_row():
