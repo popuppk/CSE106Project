@@ -156,7 +156,7 @@ def home():
 
 @app.route('/index')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', username=current_user.username)
 
 @app.route('/inventory', methods=['GET', 'POST'])
 def inventory():
@@ -171,10 +171,10 @@ def inventory():
             Inventory.quantity >= min_quantity_filter if min_quantity_filter else True
         ).all()
 
-        return render_template('index.html', inventory_items=inventory_items)
+        return render_template('index.html', username=current_user.username, inventory_items=inventory_items)
 
     # If it's a GET request, just render the inventory template
-    return render_template('index.html')
+    return render_template('index.html', username=current_user.username)
 
 @app.route('/sharedinv')
 def shared_inventory():
@@ -261,6 +261,21 @@ def edit_row():
     db.session.commit()
 
     return "Edit Complete"
+
+@app.route('/edit_shared_row', methods=['PUT'])
+def edit_shared_row():
+    data = request.json
+    print(data)
+    entry = Inventory.query.get(int(data[0]))
+
+    entry.itemName = data[1]
+    entry.quantity = int(data[2])
+    entry.description = data[3]
+
+    db.session.commit()
+
+    return "Edit Complete"
+
 
 
 if __name__ == '__main__':
