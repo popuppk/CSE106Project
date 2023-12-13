@@ -178,7 +178,13 @@ def inventory():
 
 @app.route('/sharedinv')
 def shared_inventory():
-    return render_template('index.html')
+   
+    #placeholder for data
+    shared_inventories_data = {
+        'user1': ['item1', 'item2'],
+        'user2': ['item3', 'item4'],
+    }
+    return render_template('shared_inventory.html', shared_inventories=shared_inventories_data)
 
 @app.route('/restock')
 def restock():
