@@ -120,6 +120,10 @@ form input {
   padding-bottom: 10px;
 }
 
+form label {
+  padding-top: 7px;
+}
+
 button:hover {
-  background-color: grey;
+  background-color: rgb(196, 195, 195);
 }
