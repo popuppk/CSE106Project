@@ -49,8 +49,8 @@ class Inventory(db.Model):
 
 class SharedInventory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sharedUserID = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    itemID = db.Column(db.Integer, db.ForeignKey('inventory.id'), nullable=False)
+    ownersID = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    sharedID = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     permissionLevel = db.Column(db.String(20), nullable=False)
 
 class RestockInventory(db.Model):
@@ -158,9 +158,23 @@ def home():
 def index():
     return render_template('index.html')
 
-@app.route('/inventory')
+@app.route('/inventory', methods=['GET', 'POST'])
 def inventory():
-    return render_template('index.html')
+    if request.method == 'POST':
+        # Handle filtering and search logic
+        item_name_filter = request.form.get('itemName')
+        min_quantity_filter = request.form.get('minQuantity')
+
+        # Query the inventory based on filters
+        inventory_items = Inventory.query.filter(
+            Inventory.itemName.ilike(f"%{item_name_filter}%"),
+            Inventory.quantity >= min_quantity_filter if min_quantity_filter else True
+        ).all()
+
+        return render_template('inventory.html', inventory_items=inventory_items)
+
+    # If it's a GET request, just render the inventory template
+    return render_template('inventory.html')
 
 @app.route('/sharedinv')
 def shared_inventory():

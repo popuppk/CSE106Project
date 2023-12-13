@@ -1,19 +1,11 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
   <meta charset="UTF-8" />
-
   <title>The PJL Inventory Management System</title>
-
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
   <meta name="description" content="" />
-
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
 </head>
 
 <body onload="getInventory()">
@@ -42,8 +34,8 @@
 		<button onclick="resetFilters()">Reset Filters</button>
 	</div>
     <section class="Inventory Table">
-   	  <table>
-		  <thead>
+   	  <table id="inventoryTable">
+		<thead>
 			<tr>
 			  <th>ItemID</th>
 			  <th>UserID</th>
@@ -66,6 +58,7 @@
 			  </tr>
 		  </tbody>
 		</table>
+		</table>
     </section>
   </main>
 
@@ -73,11 +66,62 @@
       <p>&copy; Paul, Luis & Jack, we deserve full points</p>
   </footer>
 
-  
-
-</body>
-
 	<script>
+		// Add row to table:
+		function submitData() {
+			const newRow = document.getElementById('editableRow');
+			const cells = newRow.getElementsByTagName('td');
+			const data = Array.from(cells).map(cell => cell.innerText);
+			
+			fetch('/add_row', {
+			method: 'POST',
+			body: JSON.stringify(data),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+			})
+
+			document.getElementById('editableRow').innerHTML = `<td><button class="addrow" onclick="submitData()">Submit</button></td><td>{{ username }}</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td>N/A</td>`
+			
+			getInventory();
+		}
+
+		// Apply filters to the table:
+		function applyFilters() {
+			const itemNameFilter = document.getElementById('itemName').value.toLowerCase();
+			const minQuantityFilter = parseInt(document.getElementById('minQuantity').value, 10);
+
+			const table = document.getElementById('inventoryTable');
+			const rows = table.getElementsByTagName('tr');
+
+			for (let i = 1; i < rows.length; i++) {
+				const cells = rows[i].getElementsByTagName('td');
+				const itemName = cells[2].innerText.toLowerCase();
+				const quantity = parseInt(cells[3].innerText, 10);
+
+				const itemNameMatches = itemName.includes(itemNameFilter);
+				const quantityMatches = isNaN(minQuantityFilter) || quantity >= minQuantityFilter;
+
+				if (itemNameMatches && quantityMatches) {
+					rows[i].style.display = '';
+				} else {
+					rows[i].style.display = 'none';
+				}
+			}
+		}
+
+		// Reset filters and show all rows:
+		function resetFilters() {
+			const table = document.getElementById('inventoryTable');
+			const rows = table.getElementsByTagName('tr');
+
+			for (let i = 1; i < rows.length; i++) {
+				rows[i].style.display = '';
+			}
+
+			document.getElementById('itemName').value = '';
+			document.getElementById('minQuantity').value = '';
+		}
 
 		//Get Data
 		let getInventory = () => {
