@@ -48,6 +48,9 @@ footer {
   color: #fff;
   text-align: center;
   padding: 1em;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
 }
 
 
@@ -76,14 +79,47 @@ th {
 .login-box {
   max-width: 400px;
   margin: auto;
+  margin-top: 130px;
   text-align: center;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  border-color: #333;
+  border-style: solid;
+  border-radius: 20px;
+  padding-left: 60px;
+  padding-right: 60px;
+  padding-bottom: 40px;
+  padding-top: 20px;
 }
 
 .login-box h2 {
+
   color: #333;
+}
+
+.login-button {
+  margin-top: 15px;
+}
+
+.register-button {
+  margin-top: 15px;
 }
 
 form {
   display: flex;
+  margin: auto;
+  text-align: left;
   flex-direction: column;
+}
+
+form input {
+  border-width: 1px;
+  border-radius: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+button:hover {
+  background-color: grey;
 }
